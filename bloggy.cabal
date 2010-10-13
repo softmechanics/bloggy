@@ -15,11 +15,12 @@ Cabal-version:       >=1.2
 Executable bloggy
   Main-is:             bloggy.hs
   Build-depends:       base >= 4 && < 5,
-                       yesod >= 0.2.0 && < 0.3,
+                       yesod >= 0.5.0,
                        data-object >= 0.3.1 && < 0.4,
                        data-object-yaml >= 0.3.0 && < 0.4,
                        cereal >= 0.2 && < 0.3,
                        directory >= 1 && < 1.1,
                        bytestring >= 0.9 && < 0.10,
                        time >= 1.1.4 && < 1.2,
-                       old-locale >= 1.0.0.2 && < 1.1
+                       old-locale >= 1.0.0.2 && < 1.1,
+                       hamlet >= 0.5

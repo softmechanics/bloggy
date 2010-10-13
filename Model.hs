@@ -1,7 +1,8 @@
 module Model where
 
-import Yesod
+import Yesod hiding (get)
 import qualified Data.ByteString as S
+import Data.ByteString.Char8 (unpack)
 import System.Directory
 import System.IO
 import Data.Serialize
@@ -10,8 +11,14 @@ import Data.List
 import Data.Function
 import Control.Monad
 import Control.Applicative
+import Control.Exception (SomeException, handle, evaluate)
 import Data.Time
 import System.Locale
+
+cs = unpack
+
+handleAny :: (SomeException -> IO a) -> IO a -> IO a
+handleAny = handle
 
 loadEntry :: String -> IO (Maybe Entry)
 loadEntry slug = do
@@ -27,7 +34,7 @@ loadEntry slug = do
                     { entrySlug = slug
                     , entryTitle = cs title
                     , entryDate = read $ cs date
-                    , entryContent = Encoded $ cs contents
+                    , entryContent = preEscapedString $ cs contents
                     }
         else return Nothing
 
@@ -35,7 +42,7 @@ data Entry = Entry
     { entrySlug :: String
     , entryTitle :: String
     , entryDate :: Day
-    , entryContent :: HtmlContent
+    , entryContent :: Html
     }
 
 loadArchive :: IO Archive
@@ -71,15 +78,22 @@ loadArchive' = do
   where
     go top f = do
         withFile (top ++ f) ReadMode $ \h -> do
-            title <- S.hGetLine h
-            date <- S.hGetLine h
-            return (read $ cs date :: Day, EntryInfo f $ cs title)
+            print f
+            title <- cs <$> S.hGetLine h
+            date <- cs <$> S.hGetLine h
+            let handler _ = do putStrLn $ "Error parsing date: " ++ date
+                               return undefined
+            day <- handleAny handler $ evaluate (read date :: Day)
+            let result = (day, EntryInfo f title)
+            return result
     toYearMonth = formatTime defaultTimeLocale "%B %Y"
 
 data EntryInfo = EntryInfo
     { eiSlug :: String
     , eiTitle :: String
     }
+  deriving Show
+
 instance Serialize EntryInfo where
     put (EntryInfo a b) = put a >> put b
     get = EntryInfo <$> get <*> get
